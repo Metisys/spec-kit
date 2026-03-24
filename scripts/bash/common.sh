@@ -1,6 +1,33 @@
 #!/usr/bin/env bash
 # Common functions and variables for all scripts
 
+# Get specs root directory relative to repo root.
+# Reads 'specs_root' from .specify/init-options.json if present; defaults to "specs".
+# Usage: get_specs_root [repo_root]
+get_specs_root() {
+    local repo_root="${1:-$(get_repo_root)}"
+    local init_options="$repo_root/.specify/init-options.json"
+
+    if [ -f "$init_options" ]; then
+        local specs_root=""
+        if command -v jq >/dev/null 2>&1; then
+            specs_root=$(jq -r '.specs_root // empty' "$init_options" 2>/dev/null || true)
+        elif command -v python3 >/dev/null 2>&1; then
+            specs_root=$(python3 -c "
+import json, sys
+try:
+    with open('$init_options') as f:
+        data = json.load(f)
+    val = data.get('specs_root', '')
+    if val: print(val)
+except Exception:
+    pass" 2>/dev/null || true)
+        fi
+        [ -n "$specs_root" ] && echo "$specs_root" && return 0
+    fi
+    echo "specs"
+}
+
 # Get repository root, with fallback for non-git repositories
 get_repo_root() {
     if git rev-parse --show-toplevel >/dev/null 2>&1; then
@@ -28,7 +55,7 @@ get_current_branch() {
 
     # For non-git repos, try to find the latest feature directory
     local repo_root=$(get_repo_root)
-    local specs_dir="$repo_root/specs"
+    local specs_dir="$repo_root/$(get_specs_root "$repo_root")"
 
     if [[ -d "$specs_dir" ]]; then
         local latest_feature=""
@@ -92,14 +119,14 @@ check_feature_branch() {
     return 0
 }
 
-get_feature_dir() { echo "$1/specs/$2"; }
+get_feature_dir() { echo "$1/$(get_specs_root "$1")/$2"; }
 
 # Find feature directory by numeric prefix instead of exact branch match
 # This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
 find_feature_dir_by_prefix() {
     local repo_root="$1"
     local branch_name="$2"
-    local specs_dir="$repo_root/specs"
+    local specs_dir="$repo_root/$(get_specs_root "$repo_root")"
 
     # Extract prefix from branch (e.g., "004" from "004-whatever" or "20260319-143022" from timestamp branches)
     local prefix=""

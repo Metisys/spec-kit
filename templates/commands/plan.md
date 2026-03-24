@@ -75,6 +75,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
 
+   **If the project uses Metisys and the spec has operational requirements** (Helm/FTL/MCP changes — i.e., spec.md does NOT contain `**Deployment-exempt**: yes`): include this note in the report:
+   > Next step before `/speckit.tasks`: run `/metisys.ops.design` to translate the Operational Requirements section into exact deployment steps. This generates `operational-design.md`, which `/speckit.tasks` reads to produce `OPS-NNN` deployment tasks.
+
 5. **Check for extension hooks**: After reporting, check if `.specify/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_plan` key
    - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally

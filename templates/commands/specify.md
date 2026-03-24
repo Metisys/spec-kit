@@ -57,6 +57,8 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
+**Codebase spec detection**: Before running the feature branch script, check if the user input signals reverse-engineering intent. Indicators: input contains "codebase", "consolidate", "existing repo", "reverse engineer", "reverse-engineer", or explicitly asks to use a repo name as the spec folder name (e.g., "use repo name as the name of the spec folder"). If detected, follow the **Codebase Spec Workflow** in step 2b instead of the standard feature spec workflow.
+
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `{ARGS}` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
 
 Given that feature description, do this:
@@ -73,7 +75,9 @@ Given that feature description, do this:
      - "Create a dashboard for analytics" → "analytics-dashboard"
      - "Fix payment processing timeout bug" → "fix-payment-timeout"
 
-2. **Create the feature branch** by running the script with `--short-name` (and `--json`). In sequential mode, do NOT pass `--number` — the script auto-detects the next available number. In timestamp mode, the script generates a `YYYYMMDD-HHMMSS` prefix automatically:
+2. **Create the feature branch** (standard feature spec workflow — skip if codebase spec detected, see 2b):
+
+   Run the script with `--short-name` (and `--json`). In sequential mode, do NOT pass `--number` — the script auto-detects the next available number. In timestamp mode, the script generates a `YYYYMMDD-HHMMSS` prefix automatically:
 
    **Branch numbering mode**: Before running the script, check if `.specify/init-options.json` exists and read the `branch_numbering` value.
    - If `"timestamp"`, add `--timestamp` (Bash) or `-Timestamp` (PowerShell) to the script invocation
@@ -121,6 +125,21 @@ Given that feature description, do this:
     8. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+
+5.5. **Inject YAML frontmatter** — prepend the following block to the very beginning of SPEC_FILE (before the `# Feature Specification:` heading):
+
+   ```yaml
+   ---
+   type: speckit.spec
+   id: SPEC-[FEATURE_NUM]-[branch-slug]
+   date: [YYYY-MM-DD]
+   subject: "[Feature name from spec title]"
+   upstream: []
+   status: final
+   ---
+   ```
+
+   Where `[FEATURE_NUM]` is the zero-padded number from the script output (e.g., `034`), `[branch-slug]` is the branch suffix without the numeric prefix (e.g., `user-auth` from `034-user-auth`), and `[YYYY-MM-DD]` is today's date. `confidence` and `key-signals` are intentionally omitted — `speckit.spec` is a build artifact, not an intelligence artifact.
 
 6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
@@ -246,6 +265,41 @@ Given that feature description, do this:
    - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
+
+**2b. Codebase Spec Workflow** (only when codebase spec detected in step above):
+
+1. Extract the repo slug from the user input (e.g., "user-auth" from "consolidate features from user-auth codebase"). Use the repo name as-is, lowercased, with spaces replaced by hyphens.
+2. Do NOT run the branch creation script. Do NOT create a git branch.
+3. Determine FEATURE_DIR: `<specs_root>/<repo-slug>/` (where `specs_root` is read from `.specify/init-options.json` or defaults to `specs/`).
+4. Create FEATURE_DIR if it does not exist.
+5. Write `spec.md` in FEATURE_DIR using the spec template as a structural guide, but focused on documenting the existing codebase (architecture, key capabilities, integration constraints) rather than user stories and acceptance scenarios.
+6. After writing, prepend this YAML frontmatter to `spec.md`:
+
+   ```yaml
+   ---
+   type: speckit.codebase
+   id: CODEBASE-[repo-slug]
+   date: [YYYY-MM-DD]
+   subject: "[Repo name] codebase architecture and integration profile"
+   upstream: []
+   confidence: [0-100 — reflect how thoroughly the codebase was read; 80+ if full codebase reviewed]
+   key-signals:
+     - signal: "[Dominant architecture pattern, e.g. 'Clean Architecture: services/ → models/ → clients/']"
+       dimension: feasibility
+       strength: [0-100]
+     - signal: "[Key capability, e.g. 'Workspace-scoped multi-tenant data isolation']"
+       dimension: feasibility
+       strength: [0-100]
+     - signal: "[Primary integration risk or constraint, e.g. 'nil-pool pattern — degrades without DB, returns warnings']"
+       dimension: health
+       strength: [0-100]
+   status: final
+   ---
+   ```
+
+   Rules: `confidence` and `key-signals` are REQUIRED (unlike `speckit.spec`). Dimensions must be `feasibility` or `health` only. `status` is `final` — never `shipped`.
+
+7. Report: spec file path, repo slug, confidence score. Codebase specs do not produce a branch, plan.md, tasks.md, or checklist.md by default (those are optional — add them only if explicitly requested).
 
 ## Quick Guidelines
 

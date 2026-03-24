@@ -32,6 +32,7 @@ Run `{SCRIPT}` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_
 - SPEC = FEATURE_DIR/spec.md
 - PLAN = FEATURE_DIR/plan.md
 - TASKS = FEATURE_DIR/tasks.md
+- OPS_DESIGN = FEATURE_DIR/operational-design.md (optional — present only when ops.design was run before speckit.tasks)
 
 Abort with an error message if any required file is missing (instruct the user to run missing prerequisite command).
 For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
@@ -66,6 +67,11 @@ Load only the minimal necessary context from each artifact:
 **From constitution:**
 
 - Load `/memory/constitution.md` for principle validation
+
+**From operational-design.md (if OPS_DESIGN exists):**
+
+- OPS-NNN task list (what operational tasks ops.design expects speckit.tasks to generate)
+- Helm/FTL/MCP change inventory (what config changes are required)
 
 ### 3. Build Semantic Models
 
@@ -113,6 +119,13 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - Data entities referenced in plan but absent in spec (or vice versa)
 - Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
 - Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
+
+#### G. Operational Design Consistency (if OPS_DESIGN exists)
+
+- If `operational-design.md` exists and tasks.md has **no** OPS-NNN tasks → **CRITICAL**: speckit.tasks was run before ops.design; re-run `/speckit.tasks` to generate the Operational Readiness phase
+- If `operational-design.md` exists, cross-check each OPS-NNN task it defines against tasks.md — tasks in operational-design.md missing from tasks.md → **HIGH** (coverage gap in ops readiness)
+- OPS-NNN tasks in tasks.md that have no corresponding entry in operational-design.md → **MEDIUM** (orphaned ops task — may be stale)
+- If `operational-design.md` is absent and the spec does **not** declare `**Deployment-exempt**: yes` → **WARN**: ops.design has not been run; if this feature has Helm/FTL/MCP changes, run `/metisys.ops.design` before `/speckit.tasks`
 
 ### 5. Severity Assignment
 

@@ -1,6 +1,24 @@
 #!/usr/bin/env pwsh
 # Common PowerShell functions analogous to common.sh
 
+# Get specs root directory relative to repo root.
+# Reads 'specs_root' from .specify/init-options.json if present; defaults to "specs".
+function Get-SpecsRoot {
+    param([string]$RepoRoot = (Get-RepoRoot))
+    $initOptions = Join-Path $RepoRoot '.specify/init-options.json'
+    if (Test-Path $initOptions) {
+        try {
+            $data = Get-Content $initOptions -Raw | ConvertFrom-Json
+            if ($data.specs_root) {
+                return $data.specs_root
+            }
+        } catch {
+            # Fall through to default
+        }
+    }
+    return 'specs'
+}
+
 function Get-RepoRoot {
     try {
         $result = git rev-parse --show-toplevel 2>$null
@@ -33,7 +51,7 @@ function Get-CurrentBranch {
     
     # For non-git repos, try to find the latest feature directory
     $repoRoot = Get-RepoRoot
-    $specsDir = Join-Path $repoRoot "specs"
+    $specsDir = Join-Path $repoRoot (Get-SpecsRoot $repoRoot)
     
     if (Test-Path $specsDir) {
         $latestFeature = ""
@@ -100,7 +118,7 @@ function Test-FeatureBranch {
 
 function Get-FeatureDir {
     param([string]$RepoRoot, [string]$Branch)
-    Join-Path $RepoRoot "specs/$Branch"
+    Join-Path $RepoRoot "$(Get-SpecsRoot $RepoRoot)/$Branch"
 }
 
 function Get-FeaturePathsEnv {

@@ -3,6 +3,10 @@ description: Execute the implementation plan by processing and executing all tas
 scripts:
   sh: scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
   ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+handoffs:
+  - label: Run Pre-Deploy Gate
+    agent: metisys.ops.preflight
+    prompt: Run the pre-deploy gate before deployment
 ---
 
 ## User Input

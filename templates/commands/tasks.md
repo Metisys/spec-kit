@@ -63,6 +63,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 2. **Load design documents**: Read from FEATURE_DIR:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
    - **Optional**: data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios)
+   - **Conditional**: `operational-design.md` (Metisys ops.design artifact — exact Helm/FTL/MCP operations for this feature):
+     - If `operational-design.md` exists in FEATURE_DIR: read it and extract all deployment operation steps. Generate `OPS-NNN` tasks in the Final Phase for each Helm upgrade, FTL config, or MCP registration required.
+     - If `operational-design.md` does not exist: check spec.md for `**Deployment-exempt**: yes` in the Operational Requirements section. If not found (i.e., the feature has deployment requirements): WARN — "operational-design.md not found. Run `/metisys.ops.design` before generating tasks to include deployment operation tasks (OPS-NNN). Proceeding without them."
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
 3. **Execute task generation workflow**:
