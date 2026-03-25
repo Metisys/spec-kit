@@ -299,7 +299,26 @@ Given that feature description, do this:
 
    Rules: `confidence` and `key-signals` are REQUIRED (unlike `speckit.spec`). Dimensions must be `feasibility` or `health` only. `status` is `final` — never `shipped`.
 
-7. Report: spec file path, repo slug, confidence score. Codebase specs do not produce a branch, plan.md, tasks.md, or checklist.md by default (those are optional — add them only if explicitly requested).
+7. **Write arc42 architecture document**: Create `FEATURE_DIR/arc42.md` as a supplementary architecture reference derived from the same codebase analysis used for `spec.md`. Structure it using the standard arc42 template, adapted for reverse-engineering an existing system:
+
+   ```markdown
+   # arc42 Architecture Documentation: [Repo Name]
+
+   > Generated from codebase analysis. Confidence: [score from spec.md frontmatter].
+
+   ## 1. Introduction and Goals
+   ## 2. Architecture Constraints
+   ## 3. System Scope and Context
+   ## 4. Solution Strategy
+   ## 5. Building Block View
+   ## 6. Runtime View
+   ## 7. Deployment View
+   ## 9. Architecture Decisions
+   ```
+
+   Populate each section from the codebase analysis. Omit sections that are entirely inapplicable (e.g. section 7 if no deployment configuration exists) — do not leave them as "N/A".
+
+8. Report: spec file path, arc42 file path, repo slug, confidence score. Codebase specs do not produce a branch, plan.md, tasks.md, or checklist.md by default (those are optional — add them only if explicitly requested).
 
 ## Quick Guidelines
 
